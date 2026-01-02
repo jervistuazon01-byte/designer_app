@@ -1,0 +1,21 @@
+# Environment Variables (NEVER upload - contains API keys)
+.env
+.env.local
+.env.production
+
+# Dependencies (will be installed on server)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local batch files (not needed for deployment)
+*.bat
+
+# Editor settings
+.vscode/
+.idea/
+
+# Reference folder (based on your naming)
+REFERENCE*/

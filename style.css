@@ -1,0 +1,969 @@
+:root {
+    --bg-color: #050505;
+    --surface-color: #111111;
+    --surface-hover: #222222;
+    --accent-color: #FFFFFF;
+    --accent-hover: #e0e0e0;
+    --danger-color: #ff4b4b;
+    --text-main: #ffffff;
+    --text-secondary: #a0a0a0;
+    --text-inverse: #000000;
+    --border-color: transparent;
+    /* Hiding borders globally where var is used */
+    --glass-bg: rgba(15, 15, 15, 0.98);
+    --glass-border: transparent;
+    /* Hiding glass borders */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --font-family: 'Outfit', sans-serif;
+    --toolbar-width: 48px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    /* Prevent selection outside inputs */
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    font-family: var(--font-family);
+    height: 100vh;
+    overflow: hidden;
+    /* No scrollbars for main window */
+}
+
+.app-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Workspace Canvas */
+#workspace-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #1c1c1c;
+    /* Dark Grey */
+    overflow: hidden;
+}
+
+/* Floating Toolbar */
+.floating-toolbar {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    width: var(--toolbar-width);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    z-index: 100;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.logo-area {
+    margin-bottom: 4px;
+    padding: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.divider {
+    width: 60%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.05);
+    /* Very subtle or removed? User said remove all white bars. */
+    background: transparent;
+    /* Removing fully per request */
+    margin: 2px 0;
+}
+
+.tool-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.tool-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text-main);
+}
+
+.tool-btn.active {
+    background: var(--surface-hover);
+    color: var(--accent-color);
+    box-shadow: none;
+}
+
+.tool-btn.danger:hover {
+    background: rgba(255, 75, 75, 0.1);
+    color: var(--danger-color);
+}
+
+/* Properties Panel */
+.properties-panel {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: none;
+    border-radius: 100px;
+    /* Pillow shape for props */
+    padding: 6px 16px;
+    z-index: 100;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.properties-panel.hidden {
+    transform: translateX(-50%) translateY(-20px);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.prop-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+}
+
+.prop-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Bottom Bar */
+.bottom-bar {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    max-width: 95%;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: none;
+    border-radius: 16px;
+    padding: 10px 14px;
+    /* slightly tighter vertical padding */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.input-section {
+    width: 100%;
+}
+
+textarea#promptInput {
+    width: 100%;
+    background: #111;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    /* Very subtle border for input form factor visibility, or none? */
+    /* User said remove white borders. transparent might make it invisible. Let's make it very dark or transparent. */
+    border: none;
+    background: #1a1a1a;
+    border-radius: 10px;
+    padding: 10px;
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 0.85rem;
+    outline: none;
+    resize: none;
+    min-height: 40px;
+    transition: background 0.2s;
+}
+
+textarea#promptInput:focus {
+    background: #222;
+}
+
+textarea#promptInput::placeholder {
+    color: #444;
+}
+
+.controls-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.model-group {
+    flex: 1;
+    /* Allow taking available space */
+    min-width: 0;
+    /* Allow shrinking if needed */
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.model-group select {
+    width: 100%;
+    background: #1a1a1a;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: inherit;
+    outline: none;
+}
+
+.model-group select:hover {
+    background: #222;
+    color: var(--text-main);
+}
+
+.action-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.icon-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.icon-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.icon-btn.danger {
+    color: var(--text-secondary);
+}
+
+.icon-btn.danger:hover {
+    background: rgba(255, 75, 75, 0.2);
+    color: var(--danger-color);
+}
+
+.primary-btn {
+    height: 34px;
+    padding: 0 18px;
+    border-radius: 17px;
+    background: var(--accent-color);
+    color: var(--text-inverse);
+    border: none;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+    transition: all 0.2s;
+    font-size: 0.8rem;
+}
+
+.primary-btn:hover {
+    transform: translateY(-1px);
+    background: var(--accent-hover);
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
+}
+
+.primary-btn .material-icons-round {
+    font-size: 16px;
+}
+
+/* Hide old styles if any conflict */
+
+/* Buttons */
+.secondary-btn {
+    padding: 8px 18px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+    border: none;
+    background: #1a1a1a;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+.secondary-btn:hover {
+    background: #2a2a2a;
+}
+
+.icon-btn.small {
+    padding: 4px;
+    border-radius: 5px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-btn.small:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* Status Indicator Toast */
+.status-indicator-toast {
+    position: absolute;
+    top: 6px;
+    /* Adjust for inside button */
+    right: 8px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    z-index: 200;
+    pointer-events: none;
+    /* Let clicks pass through */
+    transition: all 0.3s ease;
+}
+
+.status-indicator-toast.offline {
+    background: #444;
+    /* Darker grey for offline inside button */
+    box-shadow: none;
+    opacity: 0;
+    /* Maybe hide if offline? Or just subtle. User said "active green", implying offline might not need to be glaring. Let's keep it subtle or hidden. */
+    /* Let's make it invisible if offline to keep UI clean, or just very subtle dot. Reference asks for "API key active green", so maybe only show when active? */
+    /* I'll keep it subtle grey data-offline */
+}
+
+.status-indicator-toast.online {
+    background: #00ff88;
+    box-shadow: 0 0 6px #00ff88;
+    opacity: 1;
+}
+
+/* Modals */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+.modal.hidden {
+    display: none;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal-content {
+    background: #111;
+    border: none;
+    border-radius: 20px;
+    width: 450px;
+    max-width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+}
+
+.modal-content.large {
+    width: 80vw;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    padding: 18px;
+    border-bottom: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.modal-body {
+    padding: 0 18px 18px 18px;
+}
+
+.modal-body.center-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #050505;
+    overflow: hidden;
+    padding: 18px;
+}
+
+.modal-body img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.modal-footer {
+    padding: 18px;
+    border-top: none;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Utilities */
+.hidden {
+    display: none !important;
+}
+
+.material-icons-round {
+    font-size: 18px;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Immersive Modal Styles */
+.modal-content.immersive {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.immersive-body {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    pointer-events: none;
+}
+
+.immersive-body img {
+    width: auto;
+    height: auto;
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 0 120px rgba(0, 0, 0, 1);
+    display: block;
+    pointer-events: auto;
+}
+
+.floating-actions {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+    background: transparent;
+    padding: 0;
+    pointer-events: auto;
+}
+
+.floating-actions button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.floating-actions button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+}
+
+.floating-actions .secondary-btn {
+    background: #222 !important;
+    border: none;
+}
+
+.floating-actions .primary-btn {
+    opacity: 1 !important;
+}
+
+.close-floating {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    background: rgba(0, 0, 0, 0.5) !important;
+    color: white !important;
+    border: none !important;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    z-index: 110;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.close-floating:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    transform: scale(1.05);
+}
+
+
+/* Floating Gallery */
+.floating-gallery {
+    position: fixed;
+    top: 10px;
+    /* Moved up as requested */
+    right: 16px;
+    bottom: 16px;
+    width: 260px;
+    max-height: 100vh;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: none;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    z-index: 90;
+    transition: transform 0.3s ease, opacity 0.3s;
+    overflow: hidden;
+    box-shadow: -10px 0 60px rgba(0, 0, 0, 0.6);
+}
+
+.floating-gallery.collapsed {
+    height: 50px;
+    overflow: hidden;
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.gallery-grid-small::-webkit-scrollbar {
+    width: 0px;
+    /* Hidden scrollbar for sleekness per Ref */
+}
+
+.gallery-grid-small {
+    padding: 12px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    align-content: start;
+}
+
+.gallery-header-small {
+    padding: 12px 16px;
+    height: 56px;
+    /* Fixed height for reliable centering */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.gallery-header-small span {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.01em;
+    line-height: 1;
+    /* Reset line height for text alignment */
+    padding-top: 2px;
+    /* Fine-tune optical center vs icon */
+}
+
+/* Specific styling for the toggle button inside the header to match reference */
+.gallery-header-small .icon-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 6px;
+    background: transparent;
+    color: white;
+}
+
+.gallery-header-small .icon-btn:hover {
+    border-color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Updated Gallery Thumbnails - Robust Aspect Ratio */
+.gallery-thumb {
+    position: relative;
+    width: 100%;
+    padding-top: 100%;
+    /* Forces 1:1 Aspect Ratio */
+    height: 0;
+    background-color: #050505;
+    border-radius: 6px;
+    overflow: hidden;
+    border: none;
+    /* Removed white border */
+    cursor: pointer;
+    transition: transform 0.2s;
+    /* Removed flex to avoid collapse issues */
+}
+
+.gallery-thumb:hover {
+    transform: scale(1.02);
+    /* Border on hover provided via outline or nothing? User said "remove all white borders". Use scale only or subtle brightness. */
+    filter: brightness(1.2);
+}
+
+.gallery-thumb img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Actions overlay */
+.thumb-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 6px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.gallery-thumb:hover .thumb-actions {
+    opacity: 1;
+}
+
+.thumb-btn {
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: white;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px)
+}
+
+.thumb-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.thumb-btn.delete:hover {
+    background: var(--danger-color);
+}
+
+/* ==========================================================================
+   Mobile / Responsive Adjustments
+   ========================================================================== */
+@media (max-width: 768px) {
+    :root {
+        --toolbar-width: 48px;
+    }
+
+    /* Floating Toolbar - Horizontal on Mobile */
+    .floating-toolbar {
+        top: auto;
+        bottom: 130px;
+        /* Slightly more space above bottom bar */
+        left: 50%;
+        transform: translateX(-50%);
+        width: auto;
+        max-width: 95%;
+        padding: 6px 8px;
+        /* More compact padding */
+        gap: 4px;
+        /* Tighter spacing */
+        flex-direction: row;
+        /* Horizontal */
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .floating-toolbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .logo-area {
+        display: none;
+        /* Hide wand icon on mobile */
+    }
+
+    .divider {
+        width: 1px;
+        /* Vertical divider for horizontal layout */
+        height: 20px;
+        /* Slightly shorter */
+        margin: 0 2px;
+        /* Tighter margins */
+    }
+
+    .tool-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        flex-shrink: 0;
+        /* Prevent shrinking */
+    }
+
+    .tool-btn .material-icons-round {
+        font-size: 18px;
+    }
+
+    /* Properties Panel */
+    .properties-panel {
+        top: 10px;
+        padding: 6px 12px;
+        gap: 10px;
+        border-radius: 50px;
+        width: auto;
+        max-width: 90vw;
+        justify-content: center;
+        flex-wrap: wrap;
+        /* allow wrapping if needed on very small screens */
+    }
+
+    .prop-label {
+        font-size: 0.7rem;
+    }
+
+    .properties-panel input[type="range"] {
+        width: 80px;
+        /* smaller slider */
+    }
+
+    .properties-panel input[type="number"] {
+        width: 40px !important;
+        font-size: 0.8rem;
+    }
+
+    /* Bottom Bar */
+    .bottom-bar {
+        bottom: 10px;
+        width: 95%;
+        padding: 10px;
+        gap: 10px;
+        border-radius: 16px;
+    }
+
+    .input-section textarea#promptInput {
+        font-size: 0.85rem;
+        padding: 8px;
+        min-height: 40px;
+    }
+
+    .controls-section {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .controls-section {
+        flex-wrap: nowrap;
+        /* Force single line */
+        gap: 8px;
+    }
+
+    .model-group {
+        width: auto;
+        flex: 1;
+        /* Take available space */
+        min-width: 0;
+        justify-content: flex-start;
+        overflow-x: auto;
+        /* Scrollable inputs if needed */
+        scrollbar-width: none;
+        /* Hide scrollbar Firefox */
+    }
+
+    .model-group::-webkit-scrollbar {
+        display: none;
+    }
+
+    .model-group select {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+    }
+
+    .action-group {
+        width: auto;
+        /* Shrink to fit content */
+        flex-shrink: 0;
+        justify-content: flex-end;
+    }
+
+    .primary-btn {
+        height: 36px;
+        padding: 0 10px;
+        /* Compact padding */
+        font-size: 0.85rem;
+    }
+
+    .primary-btn .btn-text {
+        display: none;
+        /* Hide text on mobile for space */
+    }
+
+    .primary-btn .material-icons-round {
+        margin: 0;
+        /* Remove potential margin if it was handled by gap */
+    }
+
+    /* Floating Gallery (History) */
+    .floating-gallery {
+        top: 10px;
+        /* Moved up to match */
+        right: 10px;
+        bottom: 180px;
+        /* Clear horizontal toolbar + spacing */
+        width: 160px;
+        /* Narrower for smaller thumbnails */
+    }
+
+    .floating-gallery.collapsed {
+        width: 120px;
+        height: 44px;
+    }
+
+    .gallery-header-small {
+        padding: 8px 10px;
+        height: 44px;
+    }
+
+    .gallery-header-small span {
+        font-size: 0.85rem;
+    }
+
+    .gallery-grid-small {
+        grid-template-columns: 1fr 1fr;
+        /* 2 columns for smaller thumbs */
+        gap: 6px;
+        /* Tighter spacing */
+        padding: 8px;
+    }
+
+    /* Modals */
+    .modal-content {
+        width: 95%;
+        border-radius: 16px;
+    }
+
+    .modal-header,
+    .modal-footer {
+        padding: 16px;
+    }
+
+    .modal-body {
+        padding: 0 16px 16px 16px;
+    }
+}
+
+/* FOV Tool Styles */
+#fovAngleValue {
+    min-width: 35px;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.tool-label-small {
+    font-size: 0.7rem;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+}
+
+/* FOV Tool Properties */
+#fovTools .tool-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#fovTools input[type="range"] {
+    flex: 1;
+    max-width: 100px;
+}

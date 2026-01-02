@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Designer</title>
+    <link rel="stylesheet" href="style.css?v=0.8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <!-- Fabric.js MUST be loaded as a script since it's not strictly an ESM package here -->
+    <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
+    <style>
+        html,
+        body {
+            background-color: #0d0d0d;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+    </style>
+    <script>
+        // Emergency Error Logger (Injected by Helper)
+        window.onerror = function (msg, url, line, col, error) {
+            const div = document.getElementById('debug-log') || document.createElement('div');
+            div.id = 'debug-log';
+            div.style.position = 'fixed';
+            div.style.top = '0';
+            div.style.left = '0';
+            div.style.width = '100%';
+            div.style.maxHeight = '300px';
+            div.style.overflow = 'auto';
+            div.style.background = 'rgba(255,0,0,0.9)';
+            div.style.color = 'white';
+            div.style.zIndex = '99999';
+            div.style.padding = '10px';
+            div.style.fontFamily = 'monospace';
+            div.style.whiteSpace = 'pre-wrap';
+
+            div.innerText += `[ERROR] ${msg}\nIn ${url}:${line}:${col}\n${error?.stack || ''}\n\n`;
+            if (!div.parentNode) document.body.appendChild(div);
+        };
+
+        window.addEventListener('unhandledrejection', function (event) {
+            const div = document.getElementById('debug-log') || document.createElement('div');
+            div.id = 'debug-log';
+            if (!div.parentNode) {
+                div.style.position = 'fixed';
+                div.style.top = '0';
+                div.style.left = '0';
+                div.style.width = '100%';
+                div.style.background = 'rgba(255,0,0,0.9)';
+                div.style.color = 'white';
+                div.style.zIndex = '99999';
+                document.body.appendChild(div);
+            }
+            div.innerText += `[PROMISE] ${event.reason}\n\n`;
+        });
+    </script>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Main Canvas Area -->
+        <div id="workspace-container">
+            <canvas id="c"></canvas>
+
+            <!-- Properties Panel (Floating) -->
+            <div id="propertiesPanel" class="properties-panel hidden">
+                <!-- Dynamic Content -->
+                <div id="arrowTools" class="tool-options hidden">
+                    <span class="tool-label">Arrow Style</span>
+                    <div class="tool-row">
+                        <input type="color" id="arrowColor" value="#ff4b4b" title="Arrow Color">
+                        <input type="range" id="arrowThickness" min="1" max="20" value="5" title="Thickness">
+                    </div>
+                </div>
+                <div id="textTools" class="tool-options hidden">
+                    <span class="tool-label">Text Style</span>
+                    <div class="tool-row">
+                        <input type="color" id="textColor" value="#ff0000" title="Text Color">
+                        <input type="number" id="textSize" value="40" min="10" max="200" title="Font Size"
+                            style="width: 60px;">
+                    </div>
+                </div>
+                <div id="imageTools" class="tool-options hidden">
+                    <div class="tool-row">
+                        <button id="setBaseBtn" class="icon-btn" title="Set as Base">
+                            <span class="material-icons-round">layers</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="brushTools" class="tool-options hidden">
+                    <span id="brushLabel" class="tool-label">Brush Style</span>
+                    <div class="tool-row">
+                        <input type="color" id="brushColor" value="#ff4b4b" title="Brush Color">
+                        <input type="range" id="brushThickness" min="1" max="50" value="5" title="Brush Size">
+                    </div>
+                </div>
+                <div id="fovTools" class="tool-options hidden">
+                    <span class="tool-label">Perspective View</span>
+                    <div class="tool-row">
+                        <span class="tool-label-small">FOV</span>
+                        <input type="range" id="fovAngle" min="30" max="120" value="60" title="Field of View">
+                        <span id="fovAngleValue">60°</span>
+                    </div>
+                    <div class="tool-row">
+                        <span class="tool-label-small">Length</span>
+                        <input type="range" id="fovLength" min="50" max="500" value="200" title="View Distance">
+                    </div>
+                    <div class="tool-row">
+                        <button id="setRefImageBtn" class="icon-btn small" title="Set Reference Image for Style">
+                            <span class="material-icons-round">style</span>
+                        </button>
+                        <span id="refImageLabel" class="tool-label-small">No reference</span>
+                    </div>
+                </div>
+                <!-- Selection Tools (shown when any object is selected) -->
+                <div id="selectionTools" class="tool-options hidden">
+                    <button id="deleteSelectionBtn" class="icon-btn danger" title="Delete Selected">
+                        <span class="material-icons-round">delete</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Toolbar (Left) -->
+        <div class="floating-toolbar">
+            <button id="toolSelect" class="tool-btn active" title="Select / Move">
+                <span class="material-icons-round">near_me</span>
+            </button>
+            <button id="toolPan" class="tool-btn" title="Pan Canvas (Space)">
+                <span class="material-icons-round">pan_tool</span>
+            </button>
+            <div class="divider"></div>
+
+            <button id="toolArrow" class="tool-btn" title="Add Arrow">
+                <span class="material-icons-round">arrow_right_alt</span>
+            </button>
+            <button id="toolText" class="tool-btn" title="Add Text">
+                <span class="material-icons-round">title</span>
+            </button>
+            <button id="toolCircle" class="tool-btn" title="Add Circle">
+                <span class="material-icons-round">circle</span>
+            </button>
+            <button id="toolRect" class="tool-btn" title="Add Rectangle">
+                <span class="material-icons-round">crop_square</span>
+            </button>
+            <button id="toolBrush" class="tool-btn" title="Freehand Brush">
+                <span class="material-icons-round">brush</span>
+            </button>
+            <button id="toolRemove" class="tool-btn" title="Remove & Fill Tool">
+                <span class="material-icons-round">highlight_off</span>
+            </button>
+            <button id="toolFov" class="tool-btn" title="Perspective View Marker">
+                <span class="material-icons-round">visibility</span>
+            </button>
+            <input type="file" id="imgUpload" accept="image/*" multiple style="display: none;">
+            <input type="file" id="refImgUpload" accept="image/*" style="display: none;">
+
+            <div class="divider"></div>
+            <button id="toolUndo" class="tool-btn" title="Undo (Ctrl+Z)">
+                <span class="material-icons-round">undo</span>
+            </button>
+        </div>
+
+
+
+        <!-- Bottom Bar: Prompt & Generate -->
+        <div class="bottom-bar glass-panel">
+            <!-- Row 1: Input -->
+            <div class="input-section">
+                <textarea id="promptInput" rows="1" placeholder="Describe the changes... (Optional)"></textarea>
+            </div>
+
+            <!-- Row 2: Controls -->
+            <div class="controls-section">
+                <div class="model-group">
+                    <select id="modelSelect" title="Select Model">
+                        <option value="" disabled selected>Loading Models...</option>
+                    </select>
+                    <select id="aspectRatioSelect" title="Aspect Ratio">
+                        <option value="1:1">1:1 Square</option>
+                        <option value="16:9">16:9 Landscape</option>
+                        <option value="9:16">9:16 Portrait</option>
+                        <option value="4:3">4:3 Standard</option>
+                        <option value="3:4">3:4 Portrait</option>
+                        <option value="3:2">3:2 Photo</option>
+                        <option value="2:3">2:3 Portrait</option>
+                        <option value="5:4">5:4 Wide</option>
+                        <option value="4:5">4:5 Portrait</option>
+                        <option value="21:9">21:9 Ultrawide</option>
+                    </select>
+                    <select id="resolutionSelect" title="Output Resolution" style="width: 80px;">
+                        <option value="1K" selected>1K</option>
+                        <option value="2K">2K</option>
+                        <option value="4K">4K</option>
+                    </select>
+                </div>
+
+                <div class="action-group">
+                    <button id="settingsBtn" class="icon-btn" title="Settings" style="position: relative;">
+                        <span class="material-icons-round">settings</span>
+                        <div id="connectionStatus" class="status-indicator-toast offline" title="API Key Check"></div>
+                    </button>
+                    <button id="toolImage" class="icon-btn" title="Add Image">
+                        <span class="material-icons-round">add_photo_alternate</span>
+                    </button>
+                    <button id="toolClear" class="icon-btn danger" title="Clear All">
+                        <span class="material-icons-round">delete_sweep</span>
+                    </button>
+                    <button id="applyColorBtn" class="icon-btn" title="Apply Color Instruction">
+                        <span class="material-icons-round">palette</span>
+                    </button>
+                    <button id="generateBtn" class="primary-btn">
+                        <span class="material-icons-round">auto_awesome</span>
+                        <span class="btn-text">Generate</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-version">v0.9 (Compact)</div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button id="closeSettingsBtn" class="icon-btn"><span class="material-icons-round">close</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Google API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="Top secret key...">
+                    <small>Stored locally in your browser.</small>
+                </div>
+                <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="debugModeToggle" style="width: auto; margin: 0;">
+                    <label for="debugModeToggle" style="margin: 0; cursor: pointer;">Show Debug Request Data</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveSettingsBtn" class="primary-btn">Save Configuration</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Modal / Gallery Overlay -->
+    <div id="resultModal" class="modal hidden">
+        <div class="modal-content immersive">
+            <!-- Independent Close Button -->
+            <button id="closeResultBtn" class="icon-btn close-floating" title="Close"><span
+                    class="material-icons-round">close</span></button>
+
+            <div class="modal-body center-content immersive-body">
+                <img id="resultImage" src="" alt="Result">
+
+                <!-- Floating Actions (Bottom) -->
+                <div class="floating-actions">
+                    <button id="downloadBtn" class="secondary-btn glass-btn icon-only" title="Save Image"><span
+                            class="material-icons-round">download</span></button>
+                    <button id="addToCanvasBtn" class="primary-btn icon-only" title="Add to Workspace"><span
+                            class="material-icons-round">add_to_photos</span></button>
+                </div>
+            </div>
+            <!-- No Footer -->
+        </div>
+    </div>
+
+    <!-- Floating Gallery -->
+    <div id="floatingGallery" class="floating-gallery glass-panel">
+        <div class="gallery-header-small">
+            <span>History</span>
+            <button id="toggleGalleryBtn" class="icon-btn small"><span
+                    class="material-icons-round">expand_more</span></button>
+        </div>
+        <div id="galleryGrid" class="gallery-grid-small">
+            <!-- Thumbnails injected here -->
+        </div>
+    </div>
+
+    <!-- Debug / Payload Modal -->
+    <div id="payloadModal" class="modal hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>Request Metadata</h2>
+                <button id="closePayloadBtn" class="icon-btn"><span class="material-icons-round">close</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Final Prompt</label>
+                    <textarea id="payloadPrompt" rows="4" readonly
+                        style="width:100%; font-size: 0.8rem; color: #ccc;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Image Data (Base64 Snippet)</label>
+                    <div id="payloadImagePreview"
+                        style="font-family:monospace; font-size:0.7rem; color:#666; word-break:break-all; max-height:50px; overflow:hidden;">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="sendRequestBtn" class="primary-btn">
+                    <span class="material-icons-round">send</span> Send Request
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Module -->
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
