@@ -22,6 +22,76 @@ export function initCanvas() {
     });
 
     setupCanvasEvents();
+    setupGrid();
+}
+
+function setupGrid() {
+    STATE.canvas.on('before:render', function () {
+        const ctx = STATE.canvas.getContext();
+        const vpt = STATE.canvas.viewportTransform;
+        const zoom = STATE.canvas.getZoom();
+
+        // Performance check - don't draw if too zoomed out
+        if (zoom < 0.2) return;
+
+        const width = STATE.canvas.getWidth();
+        const height = STATE.canvas.getHeight();
+
+        // Calculate visible world area
+        // Invert transform to get world coordinates of corners
+        const iVpt = fabric.util.invertTransform(vpt);
+        const tl = fabric.util.transformPoint({ x: 0, y: 0 }, iVpt);
+        const br = fabric.util.transformPoint({ x: width, y: height }, iVpt);
+
+        const gridSize = 40; // 40px spacing
+
+        const startX = Math.floor(tl.x / gridSize) * gridSize;
+        const startY = Math.floor(tl.y / gridSize) * gridSize;
+        const endX = Math.ceil(br.x / gridSize) * gridSize;
+        const endY = Math.ceil(br.y / gridSize) * gridSize;
+
+        ctx.save();
+        // Apply viewport transform to draw in world coordinates
+        ctx.transform(vpt[0], vpt[1], vpt[2], vpt[3], vpt[4], vpt[5]);
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)'; // Very subtle dot
+        const dotSize = 2 / zoom; // Scale dot slightly so it remains visible but not huge? 
+        // actually constant world size is better for grid feel. Let's fix it to 2px world unit.
+        const fixedDot = 2;
+
+        for (let x = startX; x <= endX; x += gridSize) {
+            for (let y = startY; y <= endY; y += gridSize) {
+                // simple rect is faster
+                ctx.fillRect(x - 1, y - 1, 2, 2);
+            }
+        }
+
+        ctx.restore();
+    });
+}
+
+
+
+function createGridPattern() {
+    const patternCanvas = document.createElement('canvas');
+    patternCanvas.width = 40;
+    patternCanvas.height = 40;
+    const ctx = patternCanvas.getContext('2d');
+
+    // White background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 40, 40);
+
+    // Dark dot
+    ctx.fillStyle = '#d0d0d0';
+    ctx.beginPath();
+    ctx.arc(20, 20, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    return new fabric.Pattern({
+        source: patternCanvas,
+        repeat: 'repeat'
+    });
 }
 
 function createDefaultWorkspace() {
@@ -30,7 +100,7 @@ function createDefaultWorkspace() {
         top: STATE.canvas.getHeight() / 2,
         width: 4096,
         height: 4096,
-        fill: '#ffffff',
+        fill: createGridPattern(), // Use Pattern
         selectable: false,
         evented: false,
         originX: 'center',
@@ -58,7 +128,7 @@ function restoreWorkspace(data) {
             if (!workspace.data) workspace.data = {};
             workspace.data.isWorkspace = true;
             workspace.set({
-                fill: '#ffffff',
+                fill: createGridPattern(), // Force pattern reload
                 selectable: false,
                 evented: false
             });

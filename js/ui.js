@@ -8,6 +8,9 @@ export const els = {
     tools: {},
     imgUpload: null,
     refImgUpload: null,
+    shapeTools: null,
+    shapeColor: null,
+    shapeThickness: null,
     arrowTools: null,
     arrowColor: null,
     arrowThickness: null,
@@ -19,7 +22,6 @@ export const els = {
     brushTools: null,
     brushColor: null,
     brushThickness: null,
-    brushLabel: null,
     fovTools: null,
     fovAngle: null,
     fovAngleValue: null,
@@ -30,7 +32,6 @@ export const els = {
     deleteSelectionBtn: null,
     propertiesPanel: null,
     promptInput: null,
-    modelSelect: null,
     aspectRatioSelect: null,
     settingsBtn: null,
     generateBtn: null,
@@ -77,6 +78,9 @@ export function initUI() {
 
 
     els.imgUpload = document.getElementById('imgUpload');
+    els.shapeTools = document.getElementById('shapeTools');
+    els.shapeColor = document.getElementById('shapeColor');
+    els.shapeThickness = document.getElementById('shapeThickness');
     els.arrowTools = document.getElementById('arrowTools');
     els.arrowColor = document.getElementById('arrowColor');
     els.arrowThickness = document.getElementById('arrowThickness');
@@ -86,12 +90,10 @@ export function initUI() {
 
     els.imageTools = document.getElementById('imageTools');
     els.setBaseBtn = document.getElementById('setBaseBtn');
-    els.setBaseBtn = document.getElementById('setBaseBtn');
 
     els.brushTools = document.getElementById('brushTools');
     els.brushColor = document.getElementById('brushColor');
     els.brushThickness = document.getElementById('brushThickness');
-    els.brushLabel = document.getElementById('brushLabel');
 
     els.fovTools = document.getElementById('fovTools');
     els.fovAngle = document.getElementById('fovAngle');
@@ -107,7 +109,6 @@ export function initUI() {
     els.propertiesPanel = document.getElementById('propertiesPanel');
 
     els.promptInput = document.getElementById('promptInput');
-    els.modelSelect = document.getElementById('modelSelect');
     els.aspectRatioSelect = document.getElementById('aspectRatioSelect');
     els.resolutionSelect = document.getElementById('resolutionSelect');
     els.settingsBtn = document.getElementById('settingsBtn');
@@ -240,13 +241,14 @@ export function setupUIEvents() {
 
 export function updatePropertiesPanel(toolName, selectedType = null) {
     // Hide all first
-    els.arrowTools.classList.add('hidden');
-    els.textTools.classList.add('hidden');
-    els.imageTools.classList.add('hidden');
-    els.brushTools.classList.add('hidden');
-    els.fovTools.classList.add('hidden');
-    els.selectionTools.classList.add('hidden');
-    els.propertiesPanel.classList.add('hidden');
+    els.shapeTools?.classList.add('hidden');
+    els.arrowTools?.classList.add('hidden');
+    els.textTools?.classList.add('hidden');
+    els.imageTools?.classList.add('hidden');
+    els.brushTools?.classList.add('hidden');
+    els.fovTools?.classList.add('hidden');
+    els.selectionTools?.classList.add('hidden');
+    els.propertiesPanel?.classList.add('hidden');
 
     // Check if there's a selected object to show delete button
     const hasSelection = STATE.canvas && STATE.canvas.getActiveObject() &&
@@ -260,44 +262,63 @@ export function updatePropertiesPanel(toolName, selectedType = null) {
             if (active.type === 'image') {
                 selectedType = 'image';
                 toolName = 'select'; // Treat as select mode for UI
+            } else if (active.data?.isArrow) {
+                selectedType = 'arrow';
+                toolName = 'select';
+            } else if (active.data?.isFovMarker) {
+                selectedType = 'fov';
+                toolName = 'select';
             }
         }
     }
 
+    // Priority 1: If we have an active tool that isn't select/pan, ALWAYS show its panel.
     if (toolName === 'arrow') {
         els.propertiesPanel.classList.remove('hidden');
         els.arrowTools.classList.remove('hidden');
+    } else if (toolName === 'circle' || toolName === 'rect') {
+        els.propertiesPanel.classList.remove('hidden');
+        els.shapeTools.classList.remove('hidden');
     } else if (toolName === 'text') {
         els.propertiesPanel.classList.remove('hidden');
         els.textTools.classList.remove('hidden');
-    } else if (toolName === 'select' && selectedType === 'image') {
-        els.propertiesPanel.classList.remove('hidden');
-        els.imageTools.classList.remove('hidden');
     } else if (toolName === 'brush') {
         els.propertiesPanel.classList.remove('hidden');
         els.brushTools.classList.remove('hidden');
-        els.brushLabel.textContent = "Brush Style";
-        els.brushColor.parentElement.style.display = 'flex'; // Show color
+        if (els.brushColor) els.brushColor.style.display = '';
     } else if (toolName === 'remove') {
         els.propertiesPanel.classList.remove('hidden');
         els.brushTools.classList.remove('hidden');
-        els.brushLabel.textContent = "Remove Tool (Magenta)";
-        els.brushColor.parentElement.style.display = 'block';
-        els.brushColor.style.display = 'none'; // Hide color picker (fixed magenta)
+        if (els.brushColor) els.brushColor.style.display = 'none';
     } else if (toolName === 'fov') {
         els.propertiesPanel.classList.remove('hidden');
         els.fovTools.classList.remove('hidden');
-    } else if (toolName === 'select' && selectedType === 'fov') {
-        els.propertiesPanel.classList.remove('hidden');
-        els.fovTools.classList.remove('hidden');
-    } else {
-        // Ensure color picker is visible for next time (reset state)
-        if (els.brushColor) els.brushColor.style.display = '';
+    }
+    // Priority 2: Selection-based panels (when in select or pan mode)
+    else if (toolName === 'select' || toolName === 'pan') {
+        if (selectedType === 'image') {
+            els.propertiesPanel.classList.remove('hidden');
+            els.imageTools.classList.remove('hidden');
+        } else if (selectedType === 'arrow') {
+            els.propertiesPanel.classList.remove('hidden');
+            els.arrowTools.classList.remove('hidden');
+        } else if (selectedType === 'shape') {
+            els.propertiesPanel.classList.remove('hidden');
+            els.shapeTools.classList.remove('hidden');
+        } else if (selectedType === 'text') {
+            els.propertiesPanel.classList.remove('hidden');
+            els.textTools.classList.remove('hidden');
+        } else if (selectedType === 'fov') {
+            els.propertiesPanel.classList.remove('hidden');
+            els.fovTools.classList.remove('hidden');
+        }
     }
 
-    // Show selection tools (delete button) when any object is selected
+    // Show selection tools (delete button) only if there is a real selection
     if (hasSelection && (toolName === 'select' || toolName === 'pan')) {
-        els.propertiesPanel.classList.remove('hidden');
-        els.selectionTools.classList.remove('hidden');
+        // Toggle the NEW floating one
+        if (els.deleteSelectionBtn) els.deleteSelectionBtn.classList.remove('hidden');
+    } else {
+        if (els.deleteSelectionBtn) els.deleteSelectionBtn.classList.add('hidden');
     }
 }

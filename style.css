@@ -1,23 +1,28 @@
 :root {
-    --bg-color: #050505;
-    --surface-color: #111111;
-    --surface-hover: #222222;
+    --bg-color: #1F1F1F;
+    /* Premium Charcoal */
+    --surface-color: #2D2D2D;
+    --surface-hover: #3D3D3D;
     --accent-color: #FFFFFF;
     --accent-hover: #e0e0e0;
-    --danger-color: #ff4b4b;
+    --danger-color: #ff6b6b;
+    /* Lighter red for dark theme */
     --text-main: #ffffff;
-    --text-secondary: #a0a0a0;
+    --text-secondary: #b0b0b0;
     --text-inverse: #000000;
     --border-color: transparent;
     /* Hiding borders globally where var is used */
-    --glass-bg: rgba(15, 15, 15, 0.98);
-    --glass-border: transparent;
-    /* Hiding glass borders */
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
+    --glass-bg: rgba(30, 30, 30, 0.70);
+    /* More transparent, frosted charcoal */
+    --glass-border: rgba(255, 255, 255, 0.08);
+    /* Subtle border for glass */
+    /* Pill Shapes */
+    --radius-sm: 20px;
+    --radius-md: 50px;
+    --radius-lg: 50px;
     --font-family: 'Outfit', sans-serif;
-    --toolbar-width: 48px;
+    --toolbar-width: 56px;
+    /* Slightly wider for circle buttons */
 }
 
 * {
@@ -51,21 +56,22 @@ body {
     width: 100%;
     height: 100%;
     background-color: #1c1c1c;
-    /* Dark Grey */
+    /* Dark Grey Canvas - Slightly darker than bg to pop */
     overflow: hidden;
 }
 
 /* Floating Toolbar */
 .floating-toolbar {
     position: absolute;
-    top: 16px;
+    top: 50%;
+    transform: translateY(-50%);
     left: 16px;
     width: var(--toolbar-width);
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: none;
+    background: #2B2B2B;
+    /* Unified Solid Theme */
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
-    padding: 8px 0;
+    padding: 12px 6px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -92,9 +98,10 @@ body {
 }
 
 .tool-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    /* Circle Buttons */
     border: none;
     background: transparent;
     color: var(--text-secondary);
@@ -127,18 +134,24 @@ body {
     top: 16px;
     left: 50%;
     transform: translateX(-50%);
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: none;
+    transform: translateX(-50%);
+    background: #2B2B2B;
+    /* Unified Solid Theme */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid var(--glass-border);
     border-radius: 100px;
     /* Pillow shape for props */
-    padding: 6px 16px;
+    padding: 8px 20px;
     z-index: 100;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+    transition: transform 0.2s ease, opacity 0.2s;
+    /* Removed width transitions */
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    gap: 16px;
+    /* min-width removed to fix "too long" issue. Content is consistent now. */
 }
 
 .properties-panel.hidden {
@@ -160,6 +173,76 @@ body {
     font-weight: 500;
 }
 
+/* Tool Options (in properties panel) */
+.tool-options {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Delete Button in Toolbar */
+#deleteSelectionBtn.tool-btn.danger {
+    color: #ff4b4b;
+}
+
+#deleteSelectionBtn.tool-btn.danger:hover {
+    background-color: rgba(255, 75, 75, 0.15);
+}
+
+#deleteSelectionBtn.hidden {
+    display: none !important;
+}
+
+/* Color picker - solid circle, no outline */
+.tool-options input[type="color"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+    background: none;
+}
+
+.tool-options input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.tool-options input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
+.tool-options input[type="color"]::-moz-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
+/* Range slider styling */
+.tool-options input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 80px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.tool-options input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
 /* Bottom Bar */
 .bottom-bar {
     position: absolute;
@@ -168,10 +251,14 @@ body {
     transform: translateX(-50%);
     width: 600px;
     max-width: 95%;
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: none;
-    border-radius: 16px;
+    background: #2B2B2B;
+    /* Lighter Matte Charcoal */
+    /* Force Solid Charcoal */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    /* Rectangle with rounded corners (not pill) */
     padding: 10px 14px;
     /* slightly tighter vertical padding */
     display: flex;
@@ -192,7 +279,8 @@ textarea#promptInput {
     /* Very subtle border for input form factor visibility, or none? */
     /* User said remove white borders. transparent might make it invisible. Let's make it very dark or transparent. */
     border: none;
-    background: #1a1a1a;
+    background: transparent;
+    /* No background */
     border-radius: 10px;
     padding: 10px;
     color: var(--text-main);
@@ -230,21 +318,47 @@ textarea#promptInput::placeholder {
 }
 
 .model-group select {
-    width: 100%;
-    background: #1a1a1a;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 10px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: auto;
+    background-color: transparent;
+    border: 1px solid transparent;
+    /* Placeholder for layout */
+    border-radius: 20px;
+    padding: 6px 24px 6px 12px;
+    /* Right padding for custom arrow */
+    min-width: 40px;
     color: var(--text-secondary);
     font-size: 0.8rem;
     cursor: pointer;
     font-family: inherit;
     outline: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23b0b0b0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 2px center;
+    background-size: 14px;
+    transition: all 0.2s;
 }
 
 .model-group select:hover {
-    background: #222;
+    background-color: rgba(255, 255, 255, 0.05);
+    /* Subtle hover */
     color: var(--text-main);
+}
+
+.model-group select:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+}
+
+/* Fix option contrast */
+.model-group select option {
+    background-color: #2B2B2B;
+    /* Dark background for dropdown menu */
+    color: white;
+    /* White text */
+    padding: 10px;
 }
 
 .action-group {
@@ -254,8 +368,9 @@ textarea#promptInput::placeholder {
 }
 
 .icon-btn {
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    /* Match side toolbar */
+    height: 40px;
     border-radius: 50%;
     border: none;
     background: transparent;
@@ -282,15 +397,16 @@ textarea#promptInput::placeholder {
 }
 
 .primary-btn {
-    height: 34px;
-    padding: 0 18px;
-    border-radius: 17px;
+    width: 40px;
+    /* Match side toolbar */
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
     background: var(--accent-color);
     color: var(--text-inverse);
     border: none;
     font-weight: 700;
-    display: flex;
-    align-items: center;
+    justify-content: center;
     gap: 6px;
     cursor: pointer;
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
@@ -304,8 +420,13 @@ textarea#promptInput::placeholder {
     box-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
 }
 
+.primary-btn .btn-text {
+    display: none;
+    /* Hide Text */
+}
+
 .primary-btn .material-icons-round {
-    font-size: 16px;
+    font-size: 20px;
 }
 
 /* Hide old styles if any conflict */
@@ -313,7 +434,8 @@ textarea#promptInput::placeholder {
 /* Buttons */
 .secondary-btn {
     padding: 8px 18px;
-    border-radius: var(--radius-md);
+    border-radius: 50px;
+    /* Pill Button */
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
@@ -403,8 +525,9 @@ textarea#promptInput::placeholder {
 }
 
 .modal-content {
-    background: #111;
-    border: none;
+    background: #2B2B2B;
+    /* Unified Solid Theme */
+    border: 1px solid var(--glass-border);
     border-radius: 20px;
     width: 450px;
     max-width: 90%;
@@ -589,10 +712,13 @@ textarea#promptInput::placeholder {
     bottom: 16px;
     width: 260px;
     max-height: 100vh;
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: none;
-    border-radius: 14px;
+    max-height: 100vh;
+    background: #2B2B2B;
+    /* Unified Solid Theme */
+    backdrop-filter: none;
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    /* Soft rounding */
     display: flex;
     flex-direction: column;
     z-index: 90;
@@ -874,20 +1000,18 @@ textarea#promptInput::placeholder {
     }
 
     .primary-btn {
-        height: 36px;
-        padding: 0 10px;
-        /* Compact padding */
-        font-size: 0.85rem;
+        /* Keep 40px circle from global */
+        width: 40px;
+        height: 40px;
+        padding: 0;
     }
 
     .primary-btn .btn-text {
         display: none;
-        /* Hide text on mobile for space */
     }
 
     .primary-btn .material-icons-round {
         margin: 0;
-        /* Remove potential margin if it was handled by gap */
     }
 
     /* Floating Gallery (History) */

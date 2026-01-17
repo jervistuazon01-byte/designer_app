@@ -3,7 +3,7 @@ const express = require('express');
 const https = require('https');
 const path = require('path');
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Enable JSON Body Parsing (Limit increased for images)
 app.use(express.json({ limit: '50mb' }));
@@ -66,7 +66,7 @@ app.post('/api/generate', async (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     const { networkInterfaces } = require('os');
     const nets = networkInterfaces();
     const results = {};
@@ -98,4 +98,19 @@ app.listen(PORT, '0.0.0.0', () => {
         }
     }
     console.log(`==================================================\n`);
+});
+
+// Handle Port In Use Error
+server.on('error', (e) => {
+    if (e.code === 'EADDRINUSE') {
+        console.error(`\n[CRITICAL ERROR] Port ${PORT} is ALREADY IN USE!`);
+        console.error(`--------------------------------------------------`);
+        console.error(`It looks like the server is already running in another window.`);
+        console.error(`Please check for other "cmd.exe" or "node.exe" windows and close them.`);
+        console.error(`Then try running 'start_app.bat' again.`);
+        console.error(`--------------------------------------------------\n`);
+        process.exit(1);
+    } else {
+        console.error("SERVER ERROR:", e);
+    }
 });

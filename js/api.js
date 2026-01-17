@@ -322,8 +322,9 @@ export async function prepareGeneration() {
             prompt: finalPrompt,
             cleanBase64: cleanBase64,
             markedBase64: markedBase64,
+            markedBase64: markedBase64,
             refImageBase64Array: refImageBase64Array,  // Array of reference images
-            model: els.modelSelect.value || 'gemini-3-pro-image-preview',
+            model: 'gemini-3-pro-image-preview',
             aspectRatio: els.aspectRatioSelect ? els.aspectRatioSelect.value : "1:1",
             resolution: els.resolutionSelect ? els.resolutionSelect.value : "1K"
         };
@@ -392,7 +393,7 @@ export async function executeGeneration() {
     els.payloadModal.classList.add('hidden');
 
     const originalText = els.generateBtn.innerHTML;
-    els.generateBtn.innerHTML = '<span class="material-icons-round spin">sync</span> Generating...';
+    els.generateBtn.innerHTML = '<span class="material-icons-round spin">sync</span>';
     els.generateBtn.disabled = true;
 
     try {
@@ -548,20 +549,6 @@ export async function executeGeneration() {
 
 
 export function fetchModels(key) {
-    // If key is present (Direct), we can try to fetch, OR we just hardcode the list as requested.
-    // The user code hardcoded specific models.
-
-    // If NO key (Proxy), we could fetch models via proxy too, but hardcoding is faster and cleaner for this specific app.
-    els.modelSelect.innerHTML = '';
-    const exclusiveModels = [
-        { id: 'gemini-3-pro-image-preview', name: '🍌 Gemini 3 Pro Image (Preview)' }
-    ];
-
-    exclusiveModels.forEach(m => {
-        const opt = document.createElement('option');
-        opt.value = m.id;
-        opt.textContent = `${m.name} (${m.id})`;
-        els.modelSelect.appendChild(opt);
-    });
-    els.modelSelect.options[0].selected = true;
+    // No-op: Model is hardcoded to gemini-3-pro-image-preview
+    // Logic retained for potential future API key checks if needed
 }

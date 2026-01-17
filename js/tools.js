@@ -1,7 +1,134 @@
 import { STATE } from './state.js';
 import { els, updatePropertiesPanel } from './ui.js';
-import { saveWorkspace, undo } from './canvas-manager.js';
+import { saveWorkspace, saveHistory, undo } from './canvas-manager.js';
 
+// --- Function Definitions (Hoisted/Move up to avoid ReferenceErrors) ---
+
+function isArrowObject(obj) {
+    return obj?.data?.isArrow === true;
+}
+
+function isShapeObject(obj) {
+    return obj?.type === 'ellipse' || obj?.type === 'rect';
+}
+
+// Helper to generate path string for horizontal centered arrow
+function getArrowPath(length, thickness) {
+    const headLen = Math.max(15, thickness * 3);
+    const headWidth = headLen * 0.7;
+    const shaftWidth = thickness / 2;
+    // Centered at 0,0. From -length/2 to +length/2
+    const halfLen = length / 2;
+
+    // Points relative to center
+    // Arrow pointing to RIGHT (+x)
+    // Shaft start: x = -halfLen
+    // Head tip: x = halfLen
+    // Head base: x = halfLen - headLen
+
+    const xHeadTip = halfLen;
+    const xHeadBase = halfLen - headLen;
+    const xShaftStart = -halfLen;
+
+    return `
+        M ${xShaftStart} ${-shaftWidth}
+        L ${xHeadBase} ${-shaftWidth}
+        L ${xHeadBase} ${-headWidth}
+        L ${xHeadTip} 0
+        L ${xHeadBase} ${headWidth}
+        L ${xHeadBase} ${shaftWidth}
+        L ${xShaftStart} ${shaftWidth}
+        Z
+    `;
+}
+
+function updateArrowStyleFromUI(commit) {
+    const active = STATE.canvas?.getActiveObject();
+    if (!isArrowObject(active)) return;
+
+    const color = els.arrowColor?.value || '#ff4b4b';
+    const thickness = parseInt(els.arrowThickness?.value, 10) || 5;
+
+    // To update thickness for a path, we must recreate the path string.
+    // However, Fabric paths are static. We must replace the object or rely on scaling.
+    // Since users want the SLIDER to work, we will replace the object with a NEW path
+    // that maintains the same position/rotation/scale.
+
+    const length = active.data.length || 100; // Fallback
+    const newPathStr = getArrowPath(length, thickness);
+
+    // Create replacement arrow
+    const newArrow = new fabric.Path(newPathStr, {
+        fill: color,
+        stroke: null,
+        selectable: true,
+        hasControls: true,
+        left: active.left,
+        top: active.top,
+        angle: active.angle,
+        scaleX: active.scaleX,
+        scaleY: active.scaleY,
+        originX: 'center',
+        originY: 'center',
+        lockScalingX: false,
+        lockScalingY: false,
+        lockRotation: false
+    });
+
+    newArrow.data = { isArrow: true, color, thickness, length };
+
+    // Swap in canvas
+    const index = STATE.canvas.getObjects().indexOf(active);
+    STATE.canvas.remove(active);
+    STATE.canvas.insertAt(newArrow, index);
+    STATE.canvas.setActiveObject(newArrow);
+    STATE.canvas.requestRenderAll();
+
+    if (commit) { saveWorkspace(); saveHistory(); }
+}
+
+function updateShapeStyleFromUI(commit) {
+    const active = STATE.canvas?.getActiveObject();
+    if (!isShapeObject(active)) return;
+    const color = els.shapeColor?.value || '#ff4b4b';
+    const thickness = parseInt(els.shapeThickness?.value, 10) || 5;
+    active.set({ stroke: color, strokeWidth: thickness });
+    STATE.canvas.requestRenderAll();
+    if (commit) { saveWorkspace(); saveHistory(); }
+}
+
+
+function ensureHex(color) {
+    if (!color) return '#ff4b4b';
+    if (color.startsWith('#')) return color;
+    try {
+        return '#' + new fabric.Color(color).toHex();
+    } catch (e) {
+        console.warn('Color conversion failed', color);
+        return '#ff4b4b';
+    }
+}
+
+function syncArrowControlsFromSelection(arrow) {
+    if (!arrow) return;
+    if (els.arrowColor) els.arrowColor.value = ensureHex(arrow.fill);
+    if (els.arrowThickness) els.arrowThickness.value = arrow.data?.thickness || 5;
+}
+
+function syncShapeControlsFromSelection(shape) {
+    if (!shape) return;
+    if (els.shapeColor) els.shapeColor.value = ensureHex(shape.stroke);
+    if (els.shapeThickness) els.shapeThickness.value = shape.strokeWidth || 5;
+}
+
+function updateBrush() {
+    if (!STATE.canvas.freeDrawingBrush) return;
+    const isRemove = STATE.activeTool === 'remove';
+    let color = isRemove ? '#FF00FF' : (els.brushColor.value || '#ff4b4b');
+    const width = parseInt(els.brushThickness.value, 10) || 5;
+    STATE.canvas.freeDrawingBrush.color = color;
+    STATE.canvas.freeDrawingBrush.width = width;
+}
 
 // --- Tool Setup ---
 
@@ -15,8 +142,6 @@ export function setupTools() {
     els.tools.circle.addEventListener('click', () => setTool('circle'));
     els.tools.rect.addEventListener('click', () => setTool('rect'));
 
-    els.tools.rect.addEventListener('click', () => setTool('rect'));
-
     els.tools.image.addEventListener('click', () => els.imgUpload.click());
     els.imgUpload.addEventListener('change', (e) => handleImageFiles(e.target.files));
 
@@ -27,9 +152,21 @@ export function setupTools() {
     // Undo Button (for mobile accessibility)
     els.tools.undo.addEventListener('click', () => undo());
 
+    // Arrow Properties
+    els.arrowColor?.addEventListener('input', () => updateArrowStyleFromUI(false));
+    els.arrowColor?.addEventListener('change', () => updateArrowStyleFromUI(true));
+    els.arrowThickness?.addEventListener('input', () => updateArrowStyleFromUI(false));
+    els.arrowThickness?.addEventListener('change', () => updateArrowStyleFromUI(true));
+
+    // Shape Properties (circle, rect)
+    els.shapeColor?.addEventListener('input', () => updateShapeStyleFromUI(false));
+    els.shapeColor?.addEventListener('change', () => updateShapeStyleFromUI(true));
+    els.shapeThickness?.addEventListener('input', () => updateShapeStyleFromUI(false));
+    els.shapeThickness?.addEventListener('change', () => updateShapeStyleFromUI(true));
+
     // Brush Properties
-    els.brushColor.addEventListener('input', updateBrush);
-    els.brushThickness.addEventListener('input', updateBrush);
+    els.brushColor?.addEventListener('input', updateBrush);
+    els.brushThickness?.addEventListener('input', updateBrush);
 
     // Delete Key Support
     window.addEventListener('keydown', (e) => {
@@ -163,6 +300,16 @@ export function setupTools() {
             }
         }
     });
+
+    // Right-Click Exit (Context Menu)
+    window.addEventListener('contextmenu', (e) => {
+        // If we are in a drawing mode (Arrow, Shape, Text, Brush), exit to select
+        const drawingTools = ['arrow', 'circle', 'rect', 'text', 'brush', 'fov'];
+        if (drawingTools.includes(STATE.activeTool)) {
+            e.preventDefault(); // Prevent browser context menu
+            setTool('select');
+        }
+    });
 }
 
 function toggleBaseImage() {
@@ -223,15 +370,17 @@ function handleSelection(e) {
         if (selected.type === 'image') {
             updatePropertiesPanel('select', 'image');
             updateBaseBtnState(selected);
+        } else if (selected.data?.isArrow) {
+            updatePropertiesPanel('select', 'arrow');
+            syncArrowControlsFromSelection(selected);
+        } else if (isShapeObject(selected)) {
+            updatePropertiesPanel('select', 'shape');
+            syncShapeControlsFromSelection(selected);
         } else if (selected.data?.isFovMarker) {
             updatePropertiesPanel('select', 'fov');
             syncFovControlsFromMarker(selected);
         } else if (selected.type === 'i-text') {
-            // Text is handled by double click usually? 
-            // Logic in setTool('text') implies text creation.
-            // But if we select existing text?
-            updatePropertiesPanel('select', 'text'); // Optional: show text tools on select? 
-            // For now, only Image needs special panel on select.
+            updatePropertiesPanel('select', 'text');
         } else {
             updatePropertiesPanel('select');
         }
@@ -244,6 +393,7 @@ export function setTool(toolName) {
         if (STATE.drawingObject.shape) STATE.canvas.remove(STATE.drawingObject.shape);
         if (STATE.drawingObject.line) STATE.canvas.remove(STATE.drawingObject.line);
         if (STATE.drawingObject.head) STATE.canvas.remove(STATE.drawingObject.head);
+        if (STATE.drawingObject.arrow) STATE.canvas.remove(STATE.drawingObject.arrow);
         STATE.canvas.requestRenderAll();
         STATE.drawingObject = null;
     }
@@ -282,29 +432,15 @@ export function setTool(toolName) {
         const active = STATE.canvas.getActiveObject();
         if (active) {
             if (active.type === 'image') selectedType = 'image';
+            else if (active.data?.isArrow) selectedType = 'arrow';
+            else if (active.data?.isFovMarker) selectedType = 'fov';
             else if (active.type === 'i-text') selectedType = 'text';
         }
     }
     updatePropertiesPanel(toolName, selectedType);
 }
 
-function updateBrush() {
-    if (!STATE.canvas.freeDrawingBrush) return;
-
-    const isRemove = STATE.activeTool === 'remove';
-
-    let color;
-    if (isRemove) {
-        color = '#FF00FF'; // Magenta for AI removal
-    } else {
-        color = els.brushColor.value || '#ff4b4b'; // User-selected or red
-    }
-
-    const width = parseInt(els.brushThickness.value, 10) || 5;
-
-    STATE.canvas.freeDrawingBrush.color = color;
-    STATE.canvas.freeDrawingBrush.width = width;
-}
+// function updateBrush removed (duplicate)
 
 
 // --- Canvas Interaction for Tools ---
@@ -371,74 +507,82 @@ function setupCanvasToolEvents() {
     });
 }
 
-// --- Arrow Logic ---
+// ============================================================================
+// SUPER SIMPLE ARROW - Just ONE Path object, no groups
+// ============================================================================
+
+const ARROW_HEAD_SIZE = 15;
+
+function createArrowPath(x1, y1, x2, y2, color, thickness) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    if (len < 10) return null;
+
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    const centerX = (x1 + x2) / 2;
+    const centerY = (y1 + y2) / 2;
+
+    const pathStr = getArrowPath(len, thickness);
+
+    const arrow = new fabric.Path(pathStr, {
+        fill: color,
+        stroke: null,
+        selectable: true,
+        hasControls: true,
+        originX: 'center',
+        originY: 'center',
+        left: centerX,
+        top: centerY,
+        angle: angle,
+        // Allow scaling
+        lockScalingX: false,
+        lockScalingY: false,
+        lockRotation: false
+    });
+
+    arrow.data = { isArrow: true, color, thickness, length: len };
+    return arrow;
+}
+
+// Functions moved up to avoid ReferenceError during init
+
 function startCreateArrow(opt) {
-    const pointer = STATE.canvas.getPointer(opt.e);
-    const points = [pointer.x, pointer.y, pointer.x, pointer.y];
-    const color = els.arrowColor.value;
-    const width = parseInt(els.arrowThickness.value, 10);
-
-    const line = new fabric.Line(points, {
-        strokeWidth: width,
-        fill: color,
-        stroke: color,
-        originX: 'center',
-        originY: 'center',
-        selectable: false,
-        evented: false
-    });
-
-    const head = new fabric.Triangle({
-        width: width * 4,
-        height: width * 4,
-        fill: color,
-        left: pointer.x,
-        top: pointer.y,
-        originX: 'center',
-        originY: 'center',
-        selectable: false,
-        evented: false,
-        angle: 90
-    });
-
-    STATE.drawingObject = { line, head };
-    STATE.canvas.add(line, head);
+    const p = STATE.canvas.getPointer(opt.e);
+    STATE.drawingObject = { startX: p.x, startY: p.y, arrow: null };
 }
 
 function updateCreateArrow(opt) {
     if (!STATE.drawingObject) return;
-    const pointer = STATE.canvas.getPointer(opt.e);
-    const { line, head } = STATE.drawingObject;
+    const p = STATE.canvas.getPointer(opt.e);
 
-    line.set({ x2: pointer.x, y2: pointer.y });
-    head.set({ left: pointer.x, top: pointer.y });
+    if (STATE.drawingObject.arrow) STATE.canvas.remove(STATE.drawingObject.arrow);
 
-    const dx = pointer.x - line.x1;
-    const dy = pointer.y - line.y1;
-    let angle = Math.atan2(dy, dx) * 180 / Math.PI;
-    angle += 90;
-    head.set({ angle: angle });
+    const color = els.arrowColor?.value || '#ff4b4b';
+    const thickness = parseInt(els.arrowThickness?.value, 10) || 5;
+    const arrow = createArrowPath(STATE.drawingObject.startX, STATE.drawingObject.startY, p.x, p.y, color, thickness);
 
-    STATE.canvas.renderAll();
+    if (arrow) {
+        arrow.selectable = false;
+        STATE.drawingObject.arrow = arrow;
+        STATE.canvas.add(arrow);
+        STATE.canvas.requestRenderAll();
+    }
 }
 
 function finishCreateArrow() {
-    if (!STATE.drawingObject) return;
-    const { line, head } = STATE.drawingObject;
+    if (!STATE.drawingObject?.arrow) { STATE.drawingObject = null; return; }
 
-    // Always create as selectable. 
-    // Interaction is blocked by the global mouse:down handler when not in select mode.
-    const group = new fabric.Group([line, head], {
-        selectable: true,
-        evented: true
-    });
-
-    STATE.canvas.remove(line, head);
-    STATE.canvas.add(group);
+    const { arrow } = STATE.drawingObject;
+    arrow.set({ selectable: true });
+    arrow.setCoords();
+    STATE.canvas.setActiveObject(arrow);
+    STATE.canvas.requestRenderAll();
+    saveWorkspace();
+    saveHistory();
     STATE.drawingObject = null;
-
-    // Optional: Select it immediately if we were to auto-switch tools? 
-    // But we stay in arrow tool. So it shouldn't be active.
+    // Don't switch to select - allow continuous drawing
+    // setTool('select');
 }
 
 // --- Shape Logic ---
@@ -449,8 +593,8 @@ function startCreateShape(opt) {
     const startY = pointer.y;
     let shape;
 
-    // Use pure red for now, maybe expose color picker later if requested
-    const strokeColor = els.arrowColor ? els.arrowColor.value : '#ff4b4b';
+    const strokeColor = els.shapeColor?.value || '#ff4b4b';
+    const strokeWidth = parseInt(els.shapeThickness?.value, 10) || 5;
 
     if (STATE.activeTool === 'circle') {
         shape = new fabric.Ellipse({
@@ -462,7 +606,7 @@ function startCreateShape(opt) {
             ry: 1,
             fill: 'transparent',
             stroke: strokeColor,
-            strokeWidth: 5,
+            strokeWidth: strokeWidth,
             selectable: false,
             evented: false
         });
@@ -476,7 +620,7 @@ function startCreateShape(opt) {
             height: 1,
             fill: 'transparent',
             stroke: strokeColor,
-            strokeWidth: 5,
+            strokeWidth: strokeWidth,
             selectable: false,
             evented: false
         });
@@ -517,7 +661,8 @@ function finishCreateShape() {
     // Optional: Switch to select after drawing?
     STATE.canvas.setActiveObject(shape);
     STATE.drawingObject = null;
-    setTool('select');
+    // Don't switch to select - allow continuous drawing
+    // setTool('select'); 
 }
 
 

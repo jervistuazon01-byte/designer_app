@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Designer</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <link rel="stylesheet" href="style.css?v=0.8">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -72,20 +73,17 @@
             <!-- Properties Panel (Floating) -->
             <div id="propertiesPanel" class="properties-panel hidden">
                 <!-- Dynamic Content -->
+                <div id="shapeTools" class="tool-options hidden">
+                    <input type="color" id="shapeColor" value="#ff4b4b" title="Shape Color">
+                    <input type="range" id="shapeThickness" min="1" max="30" value="5" title="Thickness">
+                </div>
                 <div id="arrowTools" class="tool-options hidden">
-                    <span class="tool-label">Arrow Style</span>
-                    <div class="tool-row">
-                        <input type="color" id="arrowColor" value="#ff4b4b" title="Arrow Color">
-                        <input type="range" id="arrowThickness" min="1" max="20" value="5" title="Thickness">
-                    </div>
+                    <input type="color" id="arrowColor" value="#ff4b4b" title="Arrow Color">
+                    <input type="range" id="arrowThickness" min="1" max="30" value="5" title="Arrow Thickness">
                 </div>
                 <div id="textTools" class="tool-options hidden">
-                    <span class="tool-label">Text Style</span>
-                    <div class="tool-row">
-                        <input type="color" id="textColor" value="#ff0000" title="Text Color">
-                        <input type="number" id="textSize" value="40" min="10" max="200" title="Font Size"
-                            style="width: 60px;">
-                    </div>
+                    <input type="color" id="textColor" value="#ff0000" title="Text Color">
+                    <input type="range" id="textSize" min="10" max="200" value="40" title="Font Size">
                 </div>
                 <div id="imageTools" class="tool-options hidden">
                     <div class="tool-row">
@@ -95,11 +93,8 @@
                     </div>
                 </div>
                 <div id="brushTools" class="tool-options hidden">
-                    <span id="brushLabel" class="tool-label">Brush Style</span>
-                    <div class="tool-row">
-                        <input type="color" id="brushColor" value="#ff4b4b" title="Brush Color">
-                        <input type="range" id="brushThickness" min="1" max="50" value="5" title="Brush Size">
-                    </div>
+                    <input type="color" id="brushColor" value="#ff4b4b" title="Brush Color">
+                    <input type="range" id="brushThickness" min="1" max="50" value="5" title="Brush Size">
                 </div>
                 <div id="fovTools" class="tool-options hidden">
                     <span class="tool-label">Perspective View</span>
@@ -119,12 +114,7 @@
                         <span id="refImageLabel" class="tool-label-small">No reference</span>
                     </div>
                 </div>
-                <!-- Selection Tools (shown when any object is selected) -->
-                <div id="selectionTools" class="tool-options hidden">
-                    <button id="deleteSelectionBtn" class="icon-btn danger" title="Delete Selected">
-                        <span class="material-icons-round">delete</span>
-                    </button>
-                </div>
+                <!-- Selection Tools (removed) -->
             </div>
         </div>
 
@@ -166,6 +156,9 @@
             <button id="toolUndo" class="tool-btn" title="Undo (Ctrl+Z)">
                 <span class="material-icons-round">undo</span>
             </button>
+            <button id="deleteSelectionBtn" class="tool-btn danger hidden" title="Delete Selected">
+                <span class="material-icons-round">delete</span>
+            </button>
         </div>
 
 
@@ -180,22 +173,19 @@
             <!-- Row 2: Controls -->
             <div class="controls-section">
                 <div class="model-group">
-                    <select id="modelSelect" title="Select Model">
-                        <option value="" disabled selected>Loading Models...</option>
-                    </select>
                     <select id="aspectRatioSelect" title="Aspect Ratio">
-                        <option value="1:1">1:1 Square</option>
-                        <option value="16:9">16:9 Landscape</option>
-                        <option value="9:16">9:16 Portrait</option>
-                        <option value="4:3">4:3 Standard</option>
-                        <option value="3:4">3:4 Portrait</option>
-                        <option value="3:2">3:2 Photo</option>
-                        <option value="2:3">2:3 Portrait</option>
-                        <option value="5:4">5:4 Wide</option>
-                        <option value="4:5">4:5 Portrait</option>
-                        <option value="21:9">21:9 Ultrawide</option>
+                        <option value="1:1">1:1</option>
+                        <option value="16:9">16:9</option>
+                        <option value="9:16">9:16</option>
+                        <option value="4:3">4:3</option>
+                        <option value="3:4">3:4</option>
+                        <option value="3:2">3:2</option>
+                        <option value="2:3">2:3</option>
+                        <option value="5:4">5:4</option>
+                        <option value="4:5">4:5</option>
+                        <option value="21:9">21:9</option>
                     </select>
-                    <select id="resolutionSelect" title="Output Resolution" style="width: 80px;">
+                    <select id="resolutionSelect" title="Output Resolution">
                         <option value="1K" selected>1K</option>
                         <option value="2K">2K</option>
                         <option value="4K">4K</option>
@@ -216,9 +206,9 @@
                     <button id="applyColorBtn" class="icon-btn" title="Apply Color Instruction">
                         <span class="material-icons-round">palette</span>
                     </button>
-                    <button id="generateBtn" class="primary-btn">
+                    <button id="generateBtn" class="primary-btn" title="Generate">
                         <span class="material-icons-round">auto_awesome</span>
-                        <span class="btn-text">Generate</span>
+                        <!-- Text hidden via CSS or removed -->
                     </button>
                 </div>
             </div>
